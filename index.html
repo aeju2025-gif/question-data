@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>우리반 실시간 Q&A</title>
+  <title>우리반 스마트 Q&A PRO</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -14,81 +14,104 @@
     * { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
     .fade-in { animation: fadeIn 0.2s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-    .star-btn { cursor: pointer; font-size: 1.5rem; color: #475569; }
+    .star-btn { cursor: pointer; font-size: 1.2rem; color: #475569; }
     .star-btn.active { color: #facc15; }
-    .datepicker-wrapper input[type="date"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    .modal-bg { backdrop-filter: blur(8px); background: rgba(15, 23, 42, 0.9); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
-<body class="h-full bg-[#0f172a] text-[#e2e8f0]" onclick="closeAllModals(event)">
+<body class="h-full bg-[#0f172a] text-[#e2e8f0]">
+
   <div id="app" class="h-full w-full overflow-auto">
     
-    <div id="view-selector" class="flex items-center justify-center h-full">
-      <div class="text-center p-8 max-w-md w-full">
+    <div id="login-view" class="flex items-center justify-center h-full p-6">
+      <div class="max-w-md w-full bg-[#1e293b] p-8 rounded-3xl border border-[#334155] shadow-2xl text-center">
         <div class="text-6xl mb-6">💬</div>
-        <h1 class="text-4xl font-800 text-white mb-2 italic">Q&A Board</h1>
-        <button onclick="showView('teacher')" class="w-full py-5 rounded-2xl font-700 text-xl mb-4 bg-[#6366f1] text-white shadow-lg transition-all active:scale-95">교사 대시보드</button> 
-        <button onclick="showView('student')" class="w-full py-5 rounded-2xl font-700 text-xl bg-[#1e293b] border border-[#334155] transition-all active:scale-95">학생 질문하기</button>
-        <div class="mt-10 p-4 bg-white rounded-2xl inline-block shadow-2xl">
-          <div id="qr-home"></div>
+        <h1 class="text-3xl font-800 text-white mb-6 italic">Smart Class Q&A</h1>
+        <div class="space-y-4 mb-8 text-left">
+          <input id="login-name" type="text" placeholder="이름 (교사는 '관리자')" class="w-full px-5 py-4 rounded-2xl bg-[#0f172a] border border-[#334155] text-white outline-none focus:border-indigo-500">
+          <input id="login-pw" type="password" placeholder="비밀번호" class="w-full px-5 py-4 rounded-2xl bg-[#0f172a] border border-[#334155] text-white outline-none focus:border-indigo-500">
+          <button onclick="handleLogin()" class="w-full py-5 rounded-2xl font-800 text-xl bg-[#6366f1] text-white shadow-lg active:scale-95 transition-all">입장하기</button>
         </div>
+        <div id="qr-home" class="p-3 bg-white rounded-2xl inline-block"></div>
       </div>
     </div>
 
     <div id="teacher-view" class="hidden h-full flex flex-col">
-      <header class="p-5 bg-[#1e293b] border-b border-[#334155]">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-4">
-            <button onclick="showView('home')" class="text-slate-400 hover:text-white"><i data-lucide="home"></i></button>
-            <h2 class="text-white font-800 text-xl" id="display-date-title">오늘의 질문</h2>
-          </div>
-          <span id="q-count" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-900 shadow-lg">0</span>
+      <header class="p-5 bg-[#1e293b] border-b border-[#334155] flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <button onclick="logout()" class="text-slate-400 hover:text-white"><i data-lucide="log-out"></i></button>
+          <h2 class="text-white font-800 text-xl" id="display-date-title">대시보드</h2>
         </div>
-
         <div class="flex gap-2">
-          <div class="datepicker-wrapper relative flex-1 bg-[#0f172a] rounded-xl border border-[#334155] p-3 flex items-center justify-center gap-2 hover:bg-[#1e293b]">
-            <i data-lucide="calendar" class="w-5 h-5 text-indigo-400"></i>
-            <span class="text-sm font-600" id="current-date-text">오늘 날짜</span>
-            <input id="teacher-date-filter" type="date">
-          </div>
-          <button onclick="stopProp(event); toggleDateModal(true, 'teacher')" class="bg-[#6366f1] p-3 rounded-xl border border-indigo-400 shadow-lg hover:bg-indigo-500">
-            <i data-lucide="list" class="w-6 h-6 text-white"></i>
-          </button>
+          <button onclick="openUserAdmin()" class="bg-slate-700 p-3 rounded-xl text-xs font-800 border border-slate-600">명단관리</button>
+          <button onclick="toggleDateModal(true, 'teacher')" class="bg-indigo-600 p-3 rounded-xl border border-indigo-400 shadow-lg"><i data-lucide="calendar" class="w-5 h-5"></i></button>
         </div>
       </header>
-      
       <div class="flex-1 overflow-auto p-6">
         <div id="teacher-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
     </div>
 
-    <div id="date-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm" onclick="toggleDateModal(false)">
-      <div class="bg-[#1e293b] w-full max-w-sm rounded-3xl border border-[#475569] shadow-2xl overflow-hidden" onclick="stopProp(event)">
-        <div class="p-5 border-b border-[#334155] flex justify-between items-center">
-          <h3 class="text-lg font-800 text-white">질문이 기록된 날짜</h3>
-          <button onclick="toggleDateModal(false)" class="text-slate-400"><i data-lucide="x"></i></button>
+    <div id="student-view" class="hidden h-full flex flex-col">
+      <header class="p-5 flex items-center justify-between bg-[#1e293b] border-b border-[#334155]">
+        <div class="flex items-center gap-3">
+          <button onclick="logout()" class="text-slate-400 hover:text-white"><i data-lucide="log-out"></i></button>
+          <span id="display-student-name" class="text-white font-800"></span>
         </div>
-        <div id="modal-date-list" class="max-h-[50vh] overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+        <button onclick="toggleDateModal(true, 'student')" class="bg-[#0f172a] px-4 py-2 rounded-xl border border-[#334155] text-xs font-800">내 기록</button>
+      </header>
+      <div class="flex-1 overflow-auto p-5 space-y-4" id="student-list"></div>
+      <div class="p-6 bg-[#1e293b] border-t border-[#475569]">
+        <form id="question-form" class="max-w-2xl mx-auto flex gap-2">
+          <input id="inp-question" placeholder="질문을 입력하세요..." class="flex-1 px-5 py-4 rounded-2xl bg-[#0f172a] text-white border border-[#334155] outline-none" required>
+          <button type="submit" class="px-6 rounded-2xl font-800 bg-[#6366f1] text-white">전송</button>
+        </form>
       </div>
     </div>
 
-    <div id="student-view" class="hidden h-full flex flex-col">
-        <header class="p-5 flex items-center justify-between bg-[#1e293b] border-b border-[#334155]">
-          <button onclick="showView('home')" class="text-slate-400 hover:text-white"><i data-lucide="chevron-left"></i></button>
-          <button onclick="stopProp(event); toggleDateModal(true, 'student')" class="flex items-center gap-2 bg-[#0f172a] px-4 py-2 rounded-xl border border-[#334155]">
-            <i data-lucide="search" class="w-4 h-4 text-indigo-400"></i>
-            <span class="text-xs font-800 text-white" id="student-date-text">전체 기록조회</span>
-          </button>
-        </header>
-        <div class="flex-1 overflow-auto p-5 space-y-4" id="student-list"></div>
-        <div class="p-6 bg-[#1e293b] border-t border-[#475569]">
-          <form id="question-form" class="max-w-2xl mx-auto space-y-4">
-            <input id="inp-name" type="text" placeholder="본인 이름" class="w-full px-5 py-4 rounded-2xl text-lg bg-[#0f172a] text-white border border-[#334155] outline-none shadow-inner" required> 
-            <textarea id="inp-question" placeholder="질문을 남겨주세요..." rows="4" class="w-full px-5 py-4 rounded-2xl text-lg bg-[#0f172a] text-white border border-[#334155] outline-none resize-none shadow-inner" required></textarea> 
-            <button type="submit" class="w-full py-5 rounded-2xl font-800 text-xl text-white bg-[#6366f1] shadow-xl active:scale-95 transition-all">전송하기 🚀</button>
-          </form>
+    <div id="share-modal" class="hidden fixed inset-0 z-[200] modal-bg flex items-center justify-center p-4">
+      <div class="bg-[#1e293b] w-full max-w-2xl h-[80vh] rounded-3xl border border-indigo-500 shadow-2xl flex flex-col overflow-hidden">
+        <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-indigo-900/30">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-indigo-300 font-900 uppercase">Live Discussion</span>
+            <h3 class="text-white font-800" id="share-title">함께 이야기해요</h3>
+          </div>
+          <button onclick="closeShare()" class="text-slate-400 hover:text-white" id="close-share-btn"><i data-lucide="x"></i></button>
         </div>
+        <div id="share-content" class="p-6 bg-[#0f172a]/50 text-white text-lg font-700 border-b border-slate-800"></div>
+        <div id="share-comments" class="flex-1 overflow-y-auto p-5 space-y-3 no-scrollbar"></div>
+        <div class="p-4 bg-[#1e293b] border-t border-slate-700 flex gap-2">
+          <input id="comment-input" type="text" placeholder="댓글을 남겨주세요..." class="flex-1 bg-[#0f172a] border border-slate-600 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
+          <button onclick="sendComment()" class="bg-indigo-600 px-5 rounded-xl font-800 text-white">게시</button>
+        </div>
+      </div>
     </div>
+
+    <div id="user-admin-modal" class="hidden fixed inset-0 z-[150] modal-bg flex items-center justify-center p-6">
+      <div class="bg-[#1e293b] w-full max-w-lg rounded-3xl border border-slate-600 shadow-2xl flex flex-col max-h-[70vh]">
+        <div class="p-5 border-b border-slate-700 flex justify-between items-center">
+          <h3 class="text-xl font-800 text-white">학생 계정 관리</h3>
+          <button onclick="document.getElementById('user-admin-modal').classList.add('hidden')"><i data-lucide="x"></i></button>
+        </div>
+        <div id="user-list-container" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+      </div>
+    </div>
+
+    <div id="pw-change-modal" class="hidden fixed inset-0 z-[300] modal-bg flex items-center justify-center p-6">
+      <div class="bg-[#1e293b] p-8 rounded-3xl border border-indigo-500 w-full max-w-sm">
+        <h3 class="text-xl font-800 mb-4 text-center">🔐 비밀번호 변경</h3>
+        <input id="new-pw" type="password" placeholder="새 비밀번호" class="w-full mb-3 p-4 rounded-xl bg-[#0f172a] border border-slate-600 text-white">
+        <button onclick="updatePassword()" class="w-full py-4 bg-indigo-600 rounded-xl font-800">변경 완료</button>
+      </div>
+    </div>
+
+    <div id="date-modal" class="hidden fixed inset-0 z-[110] modal-bg flex items-center justify-center p-6" onclick="toggleDateModal(false)">
+      <div class="bg-[#1e293b] w-full max-w-sm rounded-3xl border border-slate-600 overflow-hidden" onclick="event.stopPropagation()">
+        <div id="modal-date-list" class="max-h-[50vh] overflow-y-auto p-4 space-y-2"></div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -105,188 +128,239 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    
+    let currentUser = null; 
     let allData = [];
-    let currentRatings = {};
-    let activeRole = 'teacher';
-
+    let currentShareId = null;
     const getToday = () => new Date().toLocaleDateString('sv-SE');
     let teacherSelectedDate = getToday();
     let studentSelectedDate = getToday();
 
-    db.ref('questions').on('value', (snapshot) => {
-      const data = snapshot.val();
-      allData = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
-      renderAll();
-    });
+    // --- 로그인 및 계정 시스템 ---
+    async function handleLogin() {
+      const name = document.getElementById('login-name').value.trim();
+      const pw = document.getElementById('login-pw').value.trim();
+      if(!name || !pw) return alert("입력해주세요.");
 
-    function showView(v) {
-      document.getElementById('view-selector').classList.toggle('hidden', v !== 'home');
-      document.getElementById('student-view').classList.toggle('hidden', v !== 'student');
-      document.getElementById('teacher-view').classList.toggle('hidden', v !== 'teacher');
-      
-      if(v === 'teacher') {
-        // 교사 화면 진입 시 항상 오늘 날짜로 초기화
-        teacherSelectedDate = getToday();
-        document.getElementById('teacher-date-filter').value = teacherSelectedDate;
-        document.getElementById('current-date-text').textContent = teacherSelectedDate;
-        document.getElementById('display-date-title').textContent = "오늘의 질문";
-        renderTeacherList();
-      }
-      
-      lucide.createIcons();
-    }
-
-    function stopProp(e) { e.stopPropagation(); }
-    function closeAllModals() { toggleDateModal(false); }
-
-    function toggleDateModal(show, role = 'teacher') {
-      const modal = document.getElementById('date-modal');
-      modal.classList.toggle('hidden', !show);
-      activeRole = role;
-      if(show) renderModalDates();
-      lucide.createIcons();
-    }
-
-    function renderModalDates() {
-      const counts = {};
-      allData.forEach(d => { if(d.date) counts[d.date] = (counts[d.date] || 0) + 1; });
-      const sorted = Object.keys(counts).sort().reverse();
-      
-      const listHtml = sorted.length > 0 ? sorted.map(date => `
-        <div onclick="selectDate('${date}')" class="flex justify-between items-center p-4 bg-[#0f172a] rounded-2xl border border-[#334155] cursor-pointer hover:border-indigo-500 active:scale-95 transition-all">
-          <span class="font-700 text-white">${date} ${date === getToday() ? '(오늘)' : ''}</span>
-          <span class="bg-indigo-600/30 text-indigo-400 px-3 py-1 rounded-full text-xs font-900">${counts[date]}개</span>
-        </div>
-      `).join('') : '<p class="text-center text-slate-500 py-10">기록이 없습니다.</p>';
-
-      document.getElementById('modal-date-list').innerHTML = listHtml;
-    }
-
-    function selectDate(date) {
-      if(activeRole === 'teacher') {
-        teacherSelectedDate = date;
-        document.getElementById('teacher-date-filter').value = date;
-        document.getElementById('current-date-text').textContent = date;
-        document.getElementById('display-date-title').textContent = date === getToday() ? "오늘의 질문" : date;
-        renderTeacherList();
-      } else {
-        studentSelectedDate = date;
-        document.getElementById('student-date-text').textContent = date;
-        renderStudentList();
-      }
-      toggleDateModal(false);
-    }
-
-    function generateQR(container) {
-      const url = window.location.href.split('#')[0] + '#student';
-      const qr = qrcode(0, 'M');
-      qr.addData(url); qr.make();
-      container.innerHTML = qr.createSvgTag(5, 0);
-    }
-    generateQR(document.getElementById('qr-home'));
-
-    document.getElementById('question-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('inp-name').value.trim();
-      const text = document.getElementById('inp-question').value.trim();
-      const dateStr = getToday();
-      await db.ref('questions').push({
-        student_name: name, question: text, feedback: '', rating: 0, status: 'pending', 
-        date: dateStr, created_at: new Date().toISOString()
-      });
-      document.getElementById('inp-question').value = '';
-      alert('질문이 등록되었습니다!');
-    });
-
-    function renderAll() { renderStudentList(); renderTeacherList(); }
-
-    function renderStudentList() {
-      const container = document.getElementById('student-list');
-      const myName = document.getElementById('inp-name').value.trim();
-      const targetDate = studentSelectedDate;
-      
-      if (!myName) { container.innerHTML = '<p class="text-center text-slate-500 py-10 font-700">이름을 입력하면 내 질문이 보입니다.</p>'; return; }
-      
-      const myItems = allData.filter(d => d.student_name === myName && d.date === targetDate);
-      container.innerHTML = myItems.length > 0 ? myItems.reverse().map(q => `
-        <div class="fade-in bg-[#1e293b] border-2 border-[#334155] rounded-2xl p-5 shadow-lg">
-          <p class="text-white text-lg font-700 mb-3">${esc(q.question)}</p>
-          ${q.feedback ? `
-            <div class="bg-[#0f172a] rounded-xl p-4 border border-indigo-500/30">
-              <p class="text-slate-300 text-sm mb-2">${esc(q.feedback)}</p>
-              <div class="text-yellow-400 font-900">${'⭐'.repeat(q.rating)}</div>
-            </div>
-          ` : '<p class="text-xs text-slate-500 italic">선생님이 답변을 준비 중입니다...</p>'}
-        </div>
-      `).join('') : `<p class="text-center text-slate-500 py-10 font-700">${targetDate} 기록 없음</p>`;
-    }
-
-    function renderTeacherList() {
-      const container = document.getElementById('teacher-list');
-      const targetDate = teacherSelectedDate;
-      const filtered = allData.filter(d => d.date === targetDate);
-      const sorted = filtered.sort((a,b) => (a.status === 'pending' ? -1 : 1));
-      document.getElementById('q-count').textContent = filtered.filter(d => d.status === 'pending').length;
-
-      if(filtered.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 font-700 text-lg">기록된 질문이 없습니다.</div>';
+      if(name === "관리자") {
+        const snap = await db.ref('users/admin').once('value');
+        const data = snap.val() || { pw: "1111", isInitial: true };
+        if(data.pw === pw) {
+          currentUser = { name: "관리자", role: "teacher", isInitial: data.isInitial };
+          checkPw();
+        } else alert("비밀번호 오류");
         return;
       }
 
-      container.innerHTML = sorted.map(q => {
-        const rating = currentRatings[q.id] || 5;
+      const snap = await db.ref(`users/${name}`).once('value');
+      let data = snap.val();
+      if(!data && pw === "1111") {
+        data = { pw: "1111", isInitial: true };
+        await db.ref(`users/${name}`).set(data);
+      }
+
+      if(data && data.pw === pw) {
+        currentUser = { name, role: "student", isInitial: data.isInitial };
+        checkPw();
+      } else alert("정보가 틀립니다.");
+    }
+
+    function checkPw() {
+      if(currentUser.isInitial) document.getElementById('pw-change-modal').classList.remove('hidden');
+      else startApp();
+    }
+
+    async function updatePassword() {
+      const np = document.getElementById('new-pw').value;
+      const path = currentUser.name === "관리자" ? 'users/admin' : `users/${currentUser.name}`;
+      await db.ref(path).update({ pw: np, isInitial: false });
+      currentUser.isInitial = false;
+      document.getElementById('pw-change-modal').classList.add('hidden');
+      startApp();
+    }
+
+    function startApp() {
+      document.getElementById('login-view').classList.add('hidden');
+      if(currentUser.role === 'teacher') document.getElementById('teacher-view').classList.remove('hidden');
+      else {
+        document.getElementById('student-view').classList.remove('hidden');
+        document.getElementById('display-student-name').textContent = currentUser.name;
+      }
+      initDatabase();
+      initShareListener();
+    }
+
+    function logout() { location.reload(); }
+
+    // --- 학생 계정 관리 기능 ---
+    async function openUserAdmin() {
+      const snap = await db.ref('users').once('value');
+      const users = snap.val() || {};
+      const container = document.getElementById('user-list-container');
+      document.getElementById('user-admin-modal').classList.remove('hidden');
+      
+      container.innerHTML = Object.keys(users).map(name => {
+        if(name === 'admin') return '';
         return `
-          <div class="fade-in bg-[#1e293b] border border-[#334155] rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+          <div class="flex justify-between items-center p-3 bg-[#0f172a] rounded-xl border border-slate-700">
             <div>
-              <div class="flex justify-between items-center mb-4">
-                <span class="text-white font-900 text-xs bg-indigo-600 px-3 py-1 rounded-full shadow-md">${esc(q.student_name)}</span>
-                <button onclick="deleteItem('${q.id}')" class="text-slate-600 hover:text-red-400 transition-all"><i data-lucide="trash-2" style="width:18px;"></i></button>
-              </div>
-              <p class="text-slate-100 font-600 mb-4 h-24 overflow-y-auto bg-[#0f172a] p-3 rounded-xl shadow-inner">${esc(q.question)}</p>
+              <span class="text-white font-bold">${name}</span>
+              <span class="text-[10px] text-slate-500 block">초기화 비번: 1111</span>
             </div>
-            <div class="mt-auto pt-4 border-t border-[#334155]">
-              ${q.status === 'pending' ? `
-                <textarea id="fb-${q.id}" placeholder="답변을 입력하세요..." class="w-full p-3 rounded-xl bg-[#0f172a] border border-[#475569] text-sm text-white mb-3 resize-none outline-none focus:border-indigo-500"></textarea>
-                <div class="flex flex-col gap-3">
-                  <div class="flex justify-center bg-[#0f172a] py-2 rounded-xl border border-[#334155]">
-                    ${[1,2,3,4,5].map(num => ` <span class="star-btn ${num <= rating ? 'active' : ''}" onclick="setRating('${q.id}', ${num})">★</span> `).join('')}
-                  </div>
-                  <button onclick="sendFeedback('${q.id}')" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-900 text-sm hover:bg-indigo-500 transition-all">전송완료</button>
-                </div>
-              ` : `
-                <div class="bg-[#0f172a] p-4 rounded-xl border border-emerald-500/20">
-                  <p class="text-indigo-300 font-700 mb-2">${esc(q.feedback)}</p>
-                  <p class="text-yellow-400 font-900">${'⭐'.repeat(q.rating)}</p>
-                </div>
-              `}
+            <div class="flex gap-2">
+              <button onclick="resetUserPw('${name}')" class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-lg">비번초기화</button>
+              <button onclick="deleteUser('${name}')" class="text-xs bg-red-900/50 text-red-300 px-3 py-1 rounded-lg">삭제</button>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    async function resetUserPw(name) {
+      if(confirm(`${name} 학생의 비밀번호를 1111로 초기화할까요?`)) {
+        await db.ref(`users/${name}`).update({ pw: "1111", isInitial: true });
+        alert('초기화되었습니다.');
+        openUserAdmin();
+      }
+    }
+
+    async function deleteUser(name) {
+      if(confirm(`${name} 학생의 계정을 삭제할까요?`)) {
+        await db.ref(`users/${name}`).remove();
+        openUserAdmin();
+      }
+    }
+
+    // --- 실시간 공유 시스템 ---
+    function initShareListener() {
+      db.ref('current_share').on('value', (snap) => {
+        const shareData = snap.val();
+        if(shareData && shareData.active) {
+          currentShareId = shareData.qId;
+          document.getElementById('share-modal').classList.remove('hidden');
+          document.getElementById('share-content').textContent = `Q. ${shareData.question}`;
+          document.getElementById('share-title').textContent = `${shareData.student_name}님의 질문`;
+          
+          // 교사만 닫기 버튼 보이기 (강제 종료 권한)
+          document.getElementById('close-share-btn').style.display = (currentUser.role === 'teacher') ? 'block' : 'none';
+          
+          loadComments(shareData.qId);
+        } else {
+          document.getElementById('share-modal').classList.add('hidden');
+          currentShareId = null;
+        }
+      });
+    }
+
+    async function shareQuestion(qId) {
+      const q = allData.find(d => d.id === qId);
+      await db.ref('current_share').set({
+        active: true,
+        qId: qId,
+        question: q.question,
+        student_name: q.student_name
+      });
+    }
+
+    async function closeShare() {
+      await db.ref('current_share').remove();
+      // 공유 종료 시 해당 질문의 댓글들도 정리하고 싶다면 추가 로직 구현 가능
+    }
+
+    function loadComments(qId) {
+      db.ref(`comments/${qId}`).on('value', (snap) => {
+        const comments = snap.val() || {};
+        const container = document.getElementById('share-comments');
+        container.innerHTML = Object.values(comments).map(c => `
+          <div class="fade-in flex flex-col ${c.name === currentUser.name ? 'items-end' : 'items-start'}">
+            <span class="text-[10px] text-slate-500 mb-1 px-1">${c.name}</span>
+            <div class="${c.name === '관리자' ? 'bg-indigo-600' : 'bg-slate-700'} px-4 py-2 rounded-2xl max-w-[80%] text-sm">
+              ${c.text}
+            </div>
+          </div>
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    async function sendComment() {
+      const input = document.getElementById('comment-input');
+      const text = input.value.trim();
+      if(!text || !currentShareId) return;
+      await db.ref(`comments/${currentShareId}`).push({
+        name: currentUser.name,
+        text: text,
+        ts: Date.now()
+      });
+      input.value = '';
+    }
+
+    // --- 기본 Q&A 로직 (데이터 렌더링) ---
+    function initDatabase() {
+      db.ref('questions').on('value', (snapshot) => {
+        const data = snapshot.val();
+        allData = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
+        renderAll();
+      });
+    }
+
+    function renderAll() {
+      if(currentUser.role === 'teacher') renderTeacher();
+      else renderStudent();
+    }
+
+    function renderTeacher() {
+      const list = document.getElementById('teacher-list');
+      const filtered = allData.filter(d => d.date === teacherSelectedDate);
+      list.innerHTML = filtered.map(q => `
+        <div class="bg-[#1e293b] p-5 rounded-2xl border border-slate-700 shadow-xl">
+          <div class="flex justify-between mb-2">
+            <span class="text-indigo-400 font-900 text-xs">${q.student_name}</span>
+            <div class="flex gap-2">
+              <button onclick="shareQuestion('${q.id}')" class="text-emerald-400 hover:scale-110 transition"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+              <button onclick="deleteItem('${q.id}')" class="text-slate-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <p class="text-white font-600 mb-4">${q.question}</p>
+          <div class="flex gap-2">
+             <input id="fb-${q.id}" value="${q.feedback || ''}" placeholder="답변..." class="flex-1 bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2 text-xs">
+             <button onclick="saveFeedback('${q.id}')" class="bg-indigo-600 px-3 rounded-lg text-xs font-800">저장</button>
+          </div>
+        </div>
+      `).join('');
       lucide.createIcons();
     }
 
-    function setRating(id, num) { currentRatings[id] = num; renderTeacherList(); }
-    async function sendFeedback(id) {
-      const feedback = document.getElementById('fb-' + id).value.trim();
-      const rating = currentRatings[id] || 5;
-      if (!feedback) return alert('답변을 써주세요!');
-      await db.ref('questions/' + id).update({ feedback, rating, status: 'answered' });
+    async function saveFeedback(id) {
+      const fb = document.getElementById('fb-'+id).value;
+      await db.ref('questions/'+id).update({ feedback: fb, status: 'answered', rating: 5 });
+      alert('답변 저장됨');
     }
-    async function deleteItem(id) { if (confirm('삭제하시겠습니까?')) await db.ref('questions/' + id).remove(); }
-    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-    
-    document.getElementById('teacher-date-filter').addEventListener('change', (e) => {
-        teacherSelectedDate = e.target.value;
-        document.getElementById('current-date-text').textContent = teacherSelectedDate;
-        document.getElementById('display-date-title').textContent = teacherSelectedDate === getToday() ? "오늘의 질문" : teacherSelectedDate;
-        renderTeacherList();
-    });
-    document.getElementById('inp-name').addEventListener('input', renderStudentList);
-    
-    // 초기 로드 시 실행
-    showView('home'); 
-    if (window.location.hash === '#student') showView('student');
+
+    function renderStudent() {
+      const list = document.getElementById('student-list');
+      const myItems = allData.filter(d => d.student_name === currentUser.name && d.date === studentSelectedDate);
+      list.innerHTML = myItems.reverse().map(q => `
+        <div class="bg-[#1e293b] p-5 rounded-2xl border border-slate-700">
+          <p class="text-white font-700">${q.question}</p>
+          ${q.feedback ? `<div class="mt-3 p-3 bg-indigo-900/20 rounded-xl text-indigo-300 text-sm italic">A. ${q.feedback}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('question-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const inp = document.getElementById('inp-question');
+      await db.ref('questions').push({
+        student_name: currentUser.name, question: inp.value, date: getToday(), ts: Date.now()
+      });
+      inp.value = '';
+    }
+
+    async function deleteItem(id) { if(confirm('삭제?')) await db.ref('questions/'+id).remove(); }
+    function toggleDateModal(s, r) { document.getElementById('date-modal').classList.toggle('hidden', !s); }
+    function generateQR(c) { const qr = qrcode(0, 'M'); qr.addData(window.location.href); qr.make(); c.innerHTML = qr.createSvgTag(4,0); }
+    generateQR(document.getElementById('qr-home'));
     lucide.createIcons();
   </script>
 </body>
